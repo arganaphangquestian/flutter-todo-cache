@@ -1,7 +1,7 @@
 import 'package:hive/hive.dart';
 part 'model.g.dart';
 
-@HiveType(typeId: 1)
+@HiveType(typeId: 0)
 class Todo {
   @HiveField(0)
   int userId;
@@ -11,6 +11,8 @@ class Todo {
   String title;
   @HiveField(3)
   bool completed;
+  @HiveField(3)
+  bool isFavorited = false;
   Todo({
     required this.userId,
     required this.id,

@@ -1,12 +1,15 @@
-import 'package:cach/core.dart';
 import 'package:cach/model.dart';
 import 'package:cach/network.dart';
+import 'package:cach/setup.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 
-void main() {
-  Core();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  setupStorage();
+  setup();
   runApp(const App());
 }
 
@@ -64,12 +67,17 @@ class ListScreenController extends GetxController {
     getTodos();
   }
 
-  void getTodos() {
-    TodoNetwork.getTodos().then((value) {
-      debugPrint('Get TODOS ${value.length}');
-      todos = RxList.from(value);
-      update();
-    }).catchError((e) {});
+  void getTodos() async {
+    TodoNetwork.getTodos().then((value) async {
+      var box = await Hive.openBox('local_todos');
+      box.put("data", value).then((_) {
+        var local = box.get("data", defaultValue: []);
+        todos = RxList.from(local ?? []);
+        update();
+      });
+    }).catchError((e) {
+      debugPrint("$e");
+    });
   }
 }
 
@@ -85,22 +93,27 @@ class ListScreen extends StatelessWidget {
         return RefreshIndicator(
           onRefresh: () async {
             _.getTodos();
-            debugPrint("${_.todos.length}");
           },
           child: ListView.builder(
             itemBuilder: (ctx, idx) {
               return Card(
-                child: Row(
-                  children: [
-                    Expanded(child: Text(_.todos[idx].title)),
-                    const SizedBox(width: 16),
-                    IconButton(
-                      onPressed: () {
-                        debugPrint('$idx');
-                      },
-                      icon: const Icon(Icons.favorite),
-                    )
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8.0,
+                    horizontal: 16.0,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(_.todos[idx].title)),
+                      const SizedBox(width: 16),
+                      IconButton(
+                        onPressed: () {
+                          debugPrint('$idx');
+                        },
+                        icon: const Icon(Icons.favorite),
+                      )
+                    ],
+                  ),
                 ),
               );
             },
